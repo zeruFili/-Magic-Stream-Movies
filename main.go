@@ -1,15 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/GavinLonDigital/MagicStream/Server/MagicStreamServer/database"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 func main() {
@@ -51,6 +54,19 @@ func main() {
 
 	router.Use(cors.New(config))
 	router.Use(gin.Logger())
+
+	var client *mongo.Client = database.Connect()
+
+	if err := client.Ping(context.Background(), nil); err != nil {
+		log.Fatalf("Failed to reach server: %v", err)
+	}
+	defer func() {
+		err := client.Disconnect(context.Background())
+		if err != nil {
+			log.Fatalf("Failed to disconnect from MongoDB: %v", err)
+		}
+
+	}()
 
 	if err := router.Run(":8080"); err != nil {
 		fmt.Println("Failed to start server", err)
